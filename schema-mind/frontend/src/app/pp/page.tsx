@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 
 /* ── Types ── */
@@ -13,6 +13,8 @@ interface Pattern {
   type: string;
   label: string;
   content: string;
+  /** Which of the 4 variations of this pattern type (1-4), set by the backend. */
+  variation?: number;
 }
 
 interface Question {
@@ -209,6 +211,18 @@ export default function ToolPage() {
   const score = answers.filter((a) => a.correct).length;
   const total = answers.length;
   const pct = total > 0 ? Math.round((score / total) * 100) : 0;
+
+  /* ── Variation numbering for pattern cards ──
+     The backend generates 4 variations per pattern type, grouped in order.
+     Prefer the backend-provided `variation` field; fall back to counting
+     occurrences within each type so the "Variation N/4" badge still shows. */
+  const patternVariations = useMemo(() => {
+    const seen: Record<string, number> = {};
+    return patterns.map((p) => {
+      seen[p.type] = (seen[p.type] ?? 0) + 1;
+      return { pattern: p, n: p.variation ?? seen[p.type] };
+    });
+  }, [patterns]);
 
   /* ── Reset all ── */
   function resetAll() {
@@ -451,7 +465,7 @@ export default function ToolPage() {
             </div>
 
             <div className="space-y-4">
-              {patterns.map((p, i) => (
+              {patternVariations.map(({ pattern: p, n }, i) => (
                 <div
                   key={i}
                   className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 md:p-6 anim in-view"
@@ -460,6 +474,9 @@ export default function ToolPage() {
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-[#b4b4b4] text-xs font-medium uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full">
                       {p.type}
+                    </span>
+                    <span className="text-black text-[10px] font-semibold tracking-wide bg-white px-2 py-0.5 rounded-full">
+                      Variation {n}/4
                     </span>
                     <span className="text-white font-medium text-sm">{p.label}</span>
                   </div>

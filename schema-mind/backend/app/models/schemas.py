@@ -27,6 +27,7 @@ class GeneratedPattern(BaseModel):
     type: str = Field(..., description="acronym|acrostic|analogy|number|story|custom")
     label: str = Field(..., description="Short human-readable label like 'Acronym: HOMES'")
     content: str = Field(..., description="The full pattern text")
+    variation: Optional[int] = Field(None, description="Which of the 4 variations of this pattern type (1-4)")
 
 class GeneratePatternsResponse(BaseModel):
     patterns: List[GeneratedPattern]
