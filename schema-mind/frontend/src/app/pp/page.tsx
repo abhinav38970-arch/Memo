@@ -163,9 +163,9 @@ export default function ToolPage() {
     setAnswers((prev) => [...prev, { qid: q.id, correct, answer: userAnswer }]);
     setFeedback({ show: true, correct, expected: q.correct_answer });
     if (!correct) {
-      setWrongConcepts((prev) => [...new Set([...prev, q.pattern_type])]);
+      setWrongConcepts((prev) => prev.includes(q.pattern_type) ? prev : [...prev, q.pattern_type]);
       // Track which pattern type failed
-      setFailedTypes((prev) => [...new Set([...prev, q.pattern_type])]);
+      setFailedTypes((prev) => prev.includes(q.pattern_type) ? prev : [...prev, q.pattern_type]);
     }
   }
 
