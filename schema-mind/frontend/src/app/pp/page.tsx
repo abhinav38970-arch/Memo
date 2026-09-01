@@ -591,7 +591,7 @@ export default function ToolPage() {
               <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 anim" style={{ animationDelay: "0.2s" }}>
                 <h3 className="text-white font-medium mb-2">Pattern types that need work:</h3>
                 <div className="flex flex-wrap gap-2 justify-center mt-2">
-                  {[...new Set(failedTypes)].map((t, i) => (
+                  {failedTypes.filter((t, i, a) => a.indexOf(t) === i).map((t, i) => (
                     <span key={i} className="bg-red-500/20 border border-red-500/30 rounded-full px-3 py-1 text-xs text-red-300">
                       {t}
                     </span>
