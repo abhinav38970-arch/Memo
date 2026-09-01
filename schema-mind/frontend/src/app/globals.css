@@ -22,14 +22,16 @@
 :root {
   --bg: #000000;
   --text: #ffffff;
-  --muted: #8e8e8e;
+  --muted: #b4b4b4;
   --nav-text: #2e2e2e;
   --pill-dark: #28282a;
-  --sign-in-text: #c8c8c8;
+  --sign-in-text: #e2e2e2;
   --nav-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
   --trust-bg: #28282a;
-  --trust-border: rgba(255, 255, 255, 0.4);
-  --trust-text: #c4c2c3;
+  --trust-border: rgba(255, 255, 255, 0.5);
+  --trust-text: #e3e1e2;
+  --text-shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.55), 0 2px 14px rgba(0, 0, 0, 0.45);
+  --text-shadow-strong: 0 2px 4px rgba(0, 0, 0, 0.6), 0 4px 26px rgba(0, 0, 0, 0.55);
   --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
   --font-display: "BubbledotICG-FinePos", "Geist Pixel Circle", monospace;
 }
@@ -69,7 +71,14 @@ body {
   position: fixed;
   inset: 0;
   z-index: 1;
-  background: rgba(0, 0, 0, 0.3);
+  /* Stronger scrim than before (was flat 0.3) — video stays visible,
+     but white/grey text now has enough contrast to stay readable. */
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.58) 0%,
+    rgba(0, 0, 0, 0.48) 45%,
+    rgba(0, 0, 0, 0.62) 100%
+  );
   pointer-events: none;
 }
 
@@ -190,6 +199,8 @@ body {
   line-height: 1.12;
   font-family: var(--font-display);
   overflow: hidden;
+  color: #ffffff;
+  text-shadow: var(--text-shadow-strong);
 }
 
 @media (max-width: 720px) {
@@ -291,17 +302,24 @@ body {
   font-family: var(--font-sans);
   letter-spacing: -0.025em;
   font-variant-numeric: tabular-nums;
+  text-shadow: var(--text-shadow-soft);
 }
 
 /* ── Stat icon ── */
 .stat-icon {
   font-family: var(--font-display);
   font-size: clamp(22px, 3vw, 33px);
+  text-shadow: var(--text-shadow-soft);
+}
+
+/* ── Readable text over the video ── */
+.text-on-video {
+  text-shadow: var(--text-shadow-soft);
 }
 
 /* ── Section styling ── */
 .section-dark {
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(4px);
 }
 
