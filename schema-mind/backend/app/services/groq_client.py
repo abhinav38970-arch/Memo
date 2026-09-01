@@ -7,7 +7,7 @@ import os
 import re
 from typing import Optional
 
-from openai import AsyncOpenAI, BadRequestError
+from openai import APIStatusError, AsyncOpenAI, BadRequestError
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,6 +21,131 @@ JSON_RETRY_REMINDER = (
     'If you genuinely cannot complete the task, return {"error": "brief reason"} '
     'as JSON. Start your reply with "{" and end it with "}".'
 )
+
+# ── Tokens-per-minute (TPM) budgeting ──────────────────────────────────────
+#
+# Groq reserves prompt_tokens + max_tokens against the org's tokens-per-minute
+# limit UPFRONT. With max_tokens=8192 and an 8000-TPM org every request needs
+# >8000 and can never succeed (HTTP 413). So we cache the observed TPM limit
+# for the process and size each request's max_tokens so the total stays under
+# it, shrinking further (still in JSON mode) when a 413 is actually raised.
+
+DEFAULT_JSON_MAX_TOKENS = 8192
+MIN_COMPLETION_TOKENS = 1024  # floor we will not go below for a JSON completion
+TPM_MARGIN = 512  # headroom reserved between the request total and the limit
+
+_learned_tpm_limit: Optional[int] = None
+
+
+def remember_tpm_limit(limit: int) -> None:
+    """Keep the largest TPM limit seen this process (limits only go up)."""
+    global _learned_tpm_limit
+    if _learned_tpm_limit is None or limit > _learned_tpm_limit:
+        _learned_tpm_limit = limit
+
+
+def parse_token_limit(msg: str) -> Optional[tuple[int, int]]:
+    """Parse ``Limit 8000, Requested 8661`` out of a Groq 413 message.
+
+    Returns ``(limit, requested)`` or None if the pattern is not present.
+    """
+    match = re.search(
+        r"Limit\s*:?\s*(\d+)\s*,?\s*Requested\s*:?\s*(\d+)",
+        msg,
+        re.IGNORECASE,
+    )
+    if not match:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
+def token_budget_error(exc: BaseException) -> Optional[tuple[int, int]]:
+    """Return ``(limit, requested)`` when ``exc`` is a TPM-budget 413.
+
+    Only matches an ``APIStatusError`` whose body ``code`` is
+    ``rate_limit_exceeded`` AND the parsed ``requested > limit``. A 429 where
+    ``requested <= limit`` just means the minute window was exhausted —
+    shrinking ``max_tokens`` won't help, so it is intentionally not matched.
+    """
+    if not isinstance(exc, APIStatusError):
+        return None
+    body = _error_body(exc)
+    error = body.get("error")
+    code = body.get("code")
+    if isinstance(error, dict) and error.get("code"):
+        code = error.get("code")
+    if code != "rate_limit_exceeded":
+        return None
+    message = body.get("message")
+    if isinstance(error, dict) and error.get("message"):
+        message = error.get("message")
+    if not isinstance(message, str):
+        return None
+    parsed = parse_token_limit(message)
+    if parsed is None:
+        return None
+    limit, requested = parsed
+    if requested <= limit:
+        return None
+    return limit, requested
+
+
+def _estimate_prompt_tokens(system: str, user: str) -> int:
+    """Rough prompt-token estimate (~4 chars/token + a small fixed overhead)."""
+    return (len(system) + len(user)) // 4 + 64
+
+
+def completion_budget(desired: int, system: str, user: str) -> int:
+    """Clamp ``desired`` max_tokens so the request fits the learned TPM limit.
+
+    With no learned limit yet, returns ``desired`` unchanged. Otherwise returns
+    ``desired`` capped at ``learned_limit - estimated_prompt - TPM_MARGIN``,
+    floored at ``MIN_COMPLETION_TOKENS``.
+    """
+    if _learned_tpm_limit is None:
+        return desired
+    budget = _learned_tpm_limit - _estimate_prompt_tokens(system, user) - TPM_MARGIN
+    budget = min(desired, budget)
+    if budget < MIN_COMPLETION_TOKENS:
+        budget = MIN_COMPLETION_TOKENS
+    return budget
+
+
+def _env_max_tokens() -> int:
+    """JSON max_tokens, from GROQ_MAX_TOKENS env var or the default on garbage."""
+    raw = os.getenv("GROQ_MAX_TOKENS")
+    if raw is not None:
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            pass
+    return DEFAULT_JSON_MAX_TOKENS
+
+
+def _unfittable_tier_message(limit: int, requested: int) -> str:
+    return (
+        "Groq rejected this request as too large for your API tier's "
+        f"tokens-per-minute limit (limit {limit}, this request needed "
+        f"{requested}). Shorten the input text, lower GROQ_MAX_TOKENS, or "
+        "upgrade your Groq tier."
+    )
+
+
+def _api_error_hint(exc: APIStatusError) -> str:
+    """Actionable hint for non-budget API errors (e.g. a plain 429)."""
+    body = _error_body(exc)
+    error = body.get("error")
+    code = body.get("code")
+    if isinstance(error, dict) and error.get("code"):
+        code = error.get("code")
+    if code == "rate_limit_exceeded":
+        return (
+            "Your Groq tokens-per-minute window is exhausted; wait a minute "
+            "and try again, or request fewer patterns."
+        )
+    return (
+        "Check your Groq API key, quota, and model availability, then try again."
+    )
 
 
 def _first_balanced_block(text: str) -> str:
@@ -202,24 +327,55 @@ class GroqClient:
         ]
 
         bad_request_error: Optional[BadRequestError] = None
-        try:
-            response = await self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=temperature,
-                max_tokens=8192,
-                response_format={"type": "json_object"},
-            )
-            content = (response.choices[0].message.content or "").strip()
-            if content:
-                return content
-        except BadRequestError as exc:
-            bad_request_error = exc
-            # Step 1: Groq ships the model's rejected output in
-            # failed_generation — if anything in there parses, we're done.
-            salvaged = salvage_failed_generation(exc)
-            if salvaged is not None:
-                return salvaged
+
+        # JSON-mode attempts: size the first request from the learned TPM
+        # budget, and on a 413 "request too large for TPM" (first attempt
+        # only) shrink max_tokens and retry once — still in JSON mode.
+        max_json_tokens = _env_max_tokens()
+        max_tokens = completion_budget(max_json_tokens, system, user)
+        for attempt in range(2):
+            try:
+                response = await self.client.chat.completions.create(
+                    model=self.model,
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format={"type": "json_object"},
+                )
+                content = (response.choices[0].message.content or "").strip()
+                if content:
+                    return content
+                # Empty JSON-mode output — fall through to the no-format retry.
+                break
+            except BadRequestError as exc:
+                bad_request_error = exc
+                # Step 1: Groq ships the model's rejected output in
+                # failed_generation — if anything in there parses, we're done.
+                salvaged = salvage_failed_generation(exc)
+                if salvaged is not None:
+                    return salvaged
+                # Fall through to the no-format retry.
+                break
+            except APIStatusError as exc:
+                budget = token_budget_error(exc)
+                if attempt == 0 and budget is not None:
+                    limit, requested = budget
+                    remember_tpm_limit(limit)
+                    # requested = prompt_tokens + max_tokens (Groq reserves the
+                    # whole completion up front), so the prompt is the remainder.
+                    prompt_tokens = requested - max_tokens
+                    shrunk = limit - prompt_tokens - TPM_MARGIN
+                    if shrunk >= MIN_COMPLETION_TOKENS:
+                        max_tokens = shrunk
+                        continue  # retry once, still in JSON mode
+                    # Tier too small even for a minimal completion.
+                    raise RuntimeError(_unfittable_tier_message(limit, requested)) from exc
+                # Non-budget API error (or the JSON-mode retry also failed):
+                # surface a clear, actionable error.
+                raise RuntimeError(
+                    f"Groq JSON request failed ({error_summary(exc)}). "
+                    f"{_api_error_hint(exc)}"
+                ) from exc
 
         # Step 2: retry once WITHOUT response_format + anti-refusal reminder.
         retry_messages = [
@@ -232,7 +388,7 @@ class GroqClient:
                 model=self.model,
                 messages=retry_messages,
                 temperature=temperature,
-                max_tokens=8192,
+                max_tokens=max_json_tokens,
             )
             last_output = (retry.choices[0].message.content or "").strip()
         except Exception as retry_exc:
