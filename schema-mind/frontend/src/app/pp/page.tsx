@@ -454,7 +454,7 @@ export default function ToolPage() {
               {patterns.map((p, i) => (
                 <div
                   key={i}
-                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 md:p-6 anim"
+                  className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 md:p-6 anim in-view"
                   style={{ animationDelay: `${0.2 + i * 0.1}s` }}
                 >
                   <div className="flex items-center gap-2 mb-3">
@@ -602,7 +602,7 @@ export default function ToolPage() {
             </div>
 
             {pct < 80 && (
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 anim" style={{ animationDelay: "0.2s" }}>
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 anim in-view" style={{ animationDelay: "0.2s" }}>
                 <h3 className="text-white font-medium mb-2">Pattern types that need work:</h3>
                 <div className="flex flex-wrap gap-2 justify-center mt-2">
                   {failedTypes.filter((t, i, a) => a.indexOf(t) === i).map((t, i) => (
