@@ -30,6 +30,18 @@ interface Question {
 // Trailing slashes are stripped so "https://x.onrender.com/" doesn't produce "//api/..." (404s).
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
 
+/* ── Extract a useful error message from a failed API response ── */
+async function apiError(res: Response): Promise<Error> {
+  try {
+    const body = await res.json();
+    const detail = typeof body?.detail === "string" ? body.detail : JSON.stringify(body?.detail);
+    if (detail) return new Error(`API error ${res.status}: ${detail}`);
+  } catch {
+    /* body wasn't JSON */
+  }
+  return new Error(`API error: ${res.status}`);
+}
+
 /* ── Built-in pattern types ── */
 const BUILTIN_TYPES = [
   { id: "acronym", label: "Acronym", desc: "First letters make a word (e.g. HOMES for Great Lakes)" },
@@ -92,7 +104,7 @@ export default function ToolPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: inputText, preferences }),
       });
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      if (!res.ok) throw await apiError(res);
       const data = await res.json();
       setPatterns(data.patterns);
       setStep("patterns");
@@ -114,7 +126,7 @@ export default function ToolPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ patterns }),
       });
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      if (!res.ok) throw await apiError(res);
       const data = await res.json();
       setQuestions(data.questions);
       setCurrentQ(0);
@@ -144,7 +156,7 @@ export default function ToolPage() {
           failed_pattern_types: failedTypes,
         }),
       });
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      if (!res.ok) throw await apiError(res);
       const data = await res.json();
       setPatterns(data.adapted_patterns);
       setAdaptNote(data.adaptation_note);
