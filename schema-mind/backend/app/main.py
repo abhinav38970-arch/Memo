@@ -40,6 +40,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Normalize duplicate slashes in paths (e.g. "//api/x" from a frontend
+# configured with a trailing-slash API URL) so they don't 404.
+@app.middleware("http")
+async def collapse_double_slashes(request, call_next):
+    path = request.scope.get("path", "")
+    if "//" in path:
+        import re
+        request.scope["path"] = re.sub(r"/{2,}", "/", path)
+    return await call_next(request)
+
 # Routers
 app.include_router(health.router)
 app.include_router(patterns.router)

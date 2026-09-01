@@ -27,7 +27,8 @@ interface Question {
 /* ── API config ── */
 // Relative by default: Next.js rewrites /api/* to the backend (see next.config.mjs).
 // Set NEXT_PUBLIC_API_URL only if the browser should hit the backend directly.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
+// Trailing slashes are stripped so "https://x.onrender.com/" doesn't produce "//api/..." (404s).
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
 
 /* ── Built-in pattern types ── */
 const BUILTIN_TYPES = [
