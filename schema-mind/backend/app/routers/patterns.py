@@ -1,3 +1,4 @@
+import traceback
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import GeneratePatternsRequest, GeneratePatternsResponse
 from app.services.pattern_service import generate_patterns
@@ -16,7 +17,10 @@ async def generate_patterns_endpoint(req: GeneratePatternsRequest):
                 detail="Failed to generate patterns. The AI might be unavailable. Try again.",
             )
         return result
+    except HTTPException:
+        raise
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Pattern generation failed: {str(e)}",

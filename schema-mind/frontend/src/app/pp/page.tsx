@@ -25,8 +25,22 @@ interface Question {
 }
 
 /* ── API config ── */
-// For local dev: use localhost:8000. On Render, update to your Render URL.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Relative by default: Next.js rewrites /api/* to the backend (see next.config.mjs).
+// Set NEXT_PUBLIC_API_URL only if the browser should hit the backend directly.
+// Trailing slashes are stripped so "https://x.onrender.com/" doesn't produce "//api/..." (404s).
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
+
+/* ── Extract a useful error message from a failed API response ── */
+async function apiError(res: Response): Promise<Error> {
+  try {
+    const body = await res.json();
+    const detail = typeof body?.detail === "string" ? body.detail : JSON.stringify(body?.detail);
+    if (detail) return new Error(`API error ${res.status}: ${detail}`);
+  } catch {
+    /* body wasn't JSON */
+  }
+  return new Error(`API error: ${res.status}`);
+}
 
 /* ── Built-in pattern types ── */
 const BUILTIN_TYPES = [
@@ -90,7 +104,7 @@ export default function ToolPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: inputText, preferences }),
       });
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      if (!res.ok) throw await apiError(res);
       const data = await res.json();
       setPatterns(data.patterns);
       setStep("patterns");
@@ -112,7 +126,7 @@ export default function ToolPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ patterns }),
       });
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      if (!res.ok) throw await apiError(res);
       const data = await res.json();
       setQuestions(data.questions);
       setCurrentQ(0);
@@ -142,7 +156,7 @@ export default function ToolPage() {
           failed_pattern_types: failedTypes,
         }),
       });
-      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      if (!res.ok) throw await apiError(res);
       const data = await res.json();
       setPatterns(data.adapted_patterns);
       setAdaptNote(data.adaptation_note);
@@ -228,10 +242,10 @@ export default function ToolPage() {
           <span className="font-display text-white text-sm hidden sm:inline">SchemaMind</span>
         </Link>
         <div className="flex items-center gap-3">
-          <span className="text-[#8e8e8e] text-xs md:text-sm">
+          <span className="text-[#b4b4b4] text-xs md:text-sm">
             Step {step === "onboarding" ? "1" : step === "input" ? "2" : step === "patterns" ? "3" : step === "quiz" ? "4" : "5"}/5
           </span>
-          <Link href="/" className="text-[#c8c8c8] text-xs md:text-sm hover:text-white transition-colors">
+          <Link href="/" className="text-[#e2e2e2] text-xs md:text-sm hover:text-white transition-colors">
             Back to Home
           </Link>
         </div>
@@ -247,7 +261,7 @@ export default function ToolPage() {
                 <span className="headline-line block">How does YOUR</span>
                 <span className="headline-line block">memory work best?</span>
               </h1>
-              <p className="text-[#d0d0d0] opacity-80 text-sm md:text-base max-w-xl mx-auto">
+              <p className="text-[#eaeaea] text-sm md:text-base max-w-xl mx-auto text-on-video">
                 Pick the patterns that click with you. Or describe your own method — anything goes.
               </p>
             </div>
@@ -259,7 +273,7 @@ export default function ToolPage() {
                 className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
                   onboardMode === "pick"
                     ? "bg-white text-black"
-                    : "bg-[#28282a] text-[#c8c8c8] hover:bg-[#323234]"
+                    : "bg-[#28282a] text-[#e2e2e2] hover:bg-[#323234]"
                 }`}
               >
                 Pick from list
@@ -269,7 +283,7 @@ export default function ToolPage() {
                 className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
                   onboardMode === "custom"
                     ? "bg-white text-black"
-                    : "bg-[#28282a] text-[#c8c8c8] hover:bg-[#323234]"
+                    : "bg-[#28282a] text-[#e2e2e2] hover:bg-[#323234]"
                 }`}
               >
                 Describe my own
@@ -301,7 +315,7 @@ export default function ToolPage() {
                         </div>
                         <div>
                           <div className="text-white font-medium text-sm">{t.label}</div>
-                          <div className="text-[#8e8e8e] text-xs">{t.desc}</div>
+                          <div className="text-[#b4b4b4] text-xs">{t.desc}</div>
                         </div>
                       </div>
                     </button>
@@ -313,7 +327,7 @@ export default function ToolPage() {
             {/* Custom mode */}
             {onboardMode === "custom" && (
               <div className="max-w-xl mx-auto space-y-4">
-                <p className="text-[#d0d0d0] text-sm">
+                <p className="text-[#e2e2e2] text-sm text-on-video">
                   Tell us how you remember things. Any method works —{" "}
                   <span className="italic">"I connect stuff to scenes from The Matrix"</span>,{" "}
                   <span className="italic">"I use football plays"</span>,{" "}
@@ -326,7 +340,7 @@ export default function ToolPage() {
                     onChange={(e) => setCustomDesc(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && addCustom()}
                     placeholder="Describe your memory method..."
-                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-[#8e8e8e] text-sm focus:outline-none focus:border-white/40"
+                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-[#b4b4b4] text-sm focus:outline-none focus:border-white/40"
                   />
                   <button
                     onClick={addCustom}
@@ -339,13 +353,13 @@ export default function ToolPage() {
                 {/* Show added customs */}
                 {preferences.filter((p) => p.type === "custom").length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-[#8e8e8e] text-xs font-medium uppercase tracking-wider">Your custom methods:</p>
+                    <p className="text-[#b4b4b4] text-xs font-medium uppercase tracking-wider">Your custom methods:</p>
                     {preferences.filter((p) => p.type === "custom").map((p, i) => (
                       <div key={i} className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-2">
                         <span className="text-white text-sm flex-1">{p.custom_description}</span>
                         <button
                           onClick={() => setPreferences((prev) => prev.filter((_, idx) => idx !== i))}
-                          className="text-[#8e8e8e] hover:text-white text-sm"
+                          className="text-[#b4b4b4] hover:text-white text-sm"
                         >
                           ✕
                         </button>
@@ -382,7 +396,7 @@ export default function ToolPage() {
           <div className="space-y-8 max-w-2xl mx-auto">
             <div className="text-center anim in-view">
               <h2 className="headline text-2xl md:text-4xl mb-2">Paste your material</h2>
-              <p className="text-[#d0d0d0] opacity-80 text-sm">
+              <p className="text-[#eaeaea] text-sm text-on-video">
                 Paste the text you need to memorize. Anything from a textbook paragraph to code docs.
               </p>
             </div>
@@ -392,13 +406,13 @@ export default function ToolPage() {
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Paste your text here..."
               rows={10}
-              className="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4 text-white placeholder:text-[#8e8e8e] text-sm focus:outline-none focus:border-white/40 resize-y min-h-[200px]"
+              className="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4 text-white placeholder:text-[#b4b4b4] text-sm focus:outline-none focus:border-white/40 resize-y min-h-[200px]"
             />
 
             <div className="flex justify-between items-center">
               <button
                 onClick={() => setStep("onboarding")}
-                className="text-[#8e8e8e] hover:text-white text-sm transition-colors"
+                className="text-[#b4b4b4] hover:text-white text-sm transition-colors"
               >
                 ← Change preferences
               </button>
@@ -422,7 +436,7 @@ export default function ToolPage() {
             <p className="text-white font-medium">
               {step === "generating" ? "Crafting your memory patterns..." : "Adapting patterns based on your progress..."}
             </p>
-            <p className="text-[#8e8e8e] text-sm mt-2">This takes a few seconds</p>
+            <p className="text-[#b4b4b4] text-sm mt-2 text-on-video">This takes a few seconds</p>
           </div>
         )}
 
@@ -431,7 +445,7 @@ export default function ToolPage() {
           <div className="space-y-8">
             <div className="text-center anim in-view">
               <h2 className="headline text-2xl md:text-4xl mb-2">Your Memory Patterns</h2>
-              <p className="text-[#d0d0d0] opacity-80 text-sm max-w-xl mx-auto">
+              <p className="text-[#eaeaea] text-sm max-w-xl mx-auto text-on-video">
                 {adaptNote ? adaptNote : "Here are your personalized patterns. Study them, then test yourself."}
               </p>
             </div>
@@ -444,12 +458,12 @@ export default function ToolPage() {
                   style={{ animationDelay: `${0.2 + i * 0.1}s` }}
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="text-[#8e8e8e] text-xs font-medium uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full">
+                    <span className="text-[#b4b4b4] text-xs font-medium uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full">
                       {p.type}
                     </span>
                     <span className="text-white font-medium text-sm">{p.label}</span>
                   </div>
-                  <p className="text-[#d0d0d0] text-sm leading-relaxed whitespace-pre-wrap">{p.content}</p>
+                  <p className="text-[#e2e2e2] text-sm leading-relaxed whitespace-pre-wrap">{p.content}</p>
                 </div>
               ))}
             </div>
@@ -464,7 +478,7 @@ export default function ToolPage() {
               </button>
               <button
                 onClick={resetAll}
-                className="text-[#8e8e8e] hover:text-white text-sm transition-colors px-4"
+                className="text-[#b4b4b4] hover:text-white text-sm transition-colors px-4"
               >
                 Start Over
               </button>
@@ -485,7 +499,7 @@ export default function ToolPage() {
                   style={{ width: `${((currentQ) / questions.length) * 100}%` }}
                 />
               </div>
-              <span className="text-[#8e8e8e] text-xs">
+              <span className="text-[#b4b4b4] text-xs">
                 {currentQ + 1}/{questions.length}
               </span>
             </div>
@@ -493,10 +507,10 @@ export default function ToolPage() {
             {/* Question */}
             <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 md:p-8 anim in-view">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-[#8e8e8e] text-xs font-medium uppercase tracking-wider">
+                <span className="text-[#b4b4b4] text-xs font-medium uppercase tracking-wider">
                   {questions[currentQ].type === "cloze" ? "Fill in the blank" : "Multiple Choice"}
                 </span>
-                <span className="text-[#8e8e8e] text-xs">
+                <span className="text-[#b4b4b4] text-xs">
                   · {questions[currentQ].pattern_type}
                 </span>
               </div>
@@ -516,7 +530,7 @@ export default function ToolPage() {
                       className={`w-full text-left p-3 rounded-xl border text-sm transition-all ${
                         userAnswer === opt.replace(/^[A-D]\)\s*/, "")
                           ? "bg-white/15 border-white/40 text-white"
-                          : "bg-white/5 border-white/10 hover:bg-white/10 text-[#d0d0d0]"
+                          : "bg-white/5 border-white/10 hover:bg-white/10 text-[#e2e2e2]"
                       }`}
                     >
                       {opt}
@@ -535,7 +549,7 @@ export default function ToolPage() {
                     onKeyDown={(e) => e.key === "Enter" && !feedback.show && submitAnswer()}
                     placeholder="Type your answer..."
                     disabled={feedback.show}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-[#8e8e8e] text-sm focus:outline-none focus:border-white/40"
+                    className="w-full bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-[#b4b4b4] text-sm focus:outline-none focus:border-white/40"
                   />
                 </div>
               )}
@@ -582,7 +596,7 @@ export default function ToolPage() {
               <div className="text-6xl md:text-8xl font-display text-white mt-4 mb-2">
                 {pct}%
               </div>
-              <p className="text-[#d0d0d0]">
+              <p className="text-[#e2e2e2] text-on-video">
                 {score}/{total} correct
               </p>
             </div>
@@ -617,7 +631,7 @@ export default function ToolPage() {
               )}
               <button
                 onClick={resetAll}
-                className="text-[#8e8e8e] hover:text-white text-sm transition-colors px-4"
+                className="text-[#b4b4b4] hover:text-white text-sm transition-colors px-4"
               >
                 Start Over
               </button>
@@ -628,7 +642,7 @@ export default function ToolPage() {
 
       {/* ── Footer ── */}
       <footer className="py-8 px-4 text-center border-t border-white/10 mt-8">
-        <p className="text-[#8e8e8e] text-xs">
+        <p className="text-[#b4b4b4] text-xs">
           SchemaMind — Paste. Learn. Remember. Built for the Hackathon.
         </p>
       </footer>

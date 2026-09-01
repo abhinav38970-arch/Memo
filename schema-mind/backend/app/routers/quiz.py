@@ -1,3 +1,4 @@
+import traceback
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import (
     GenerateQuizRequest, GenerateQuizResponse,
@@ -20,6 +21,7 @@ async def generate_quiz_endpoint(req: GenerateQuizRequest):
             )
         return result
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Quiz generation failed: {str(e)}",

@@ -72,7 +72,7 @@ function StatCard(props: {
         {value.toFixed(props.decimals)}
         <span>{props.suffix}</span>
       </span>
-      <span className="text-[#8e8e8e] text-[clamp(11px,1.2vw,12.5px)]">{props.label}</span>
+      <span className="text-[#b4b4b4] text-[clamp(11px,1.2vw,12.5px)] text-on-video">{props.label}</span>
     </div>
   );
 }
@@ -195,7 +195,7 @@ export default function HomePage() {
 
           <Link
             href="/pp"
-            className="hidden md:flex items-center h-[clamp(44px,5.2vw,48px)] px-5 bg-[#28282a] text-[#c8c8c8] rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.16)] hover:bg-[#323234] hover:text-white hover:-translate-y-0.5 transition-all text-[clamp(13px,1.4vw,15px)] font-medium"
+            className="hidden md:flex items-center h-[clamp(44px,5.2vw,48px)] px-5 bg-[#28282a] text-[#e2e2e2] rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.16)] hover:bg-[#323234] hover:text-white hover:-translate-y-0.5 transition-all text-[clamp(13px,1.4vw,15px)] font-medium"
           >
             Try SchemaMind
           </Link>
@@ -293,14 +293,14 @@ export default function HomePage() {
               </div>
             </div>
             <div
-              className="h-[var(--trust-size)] bg-[#28282a] border border-[rgba(255,255,255,0.4)] rounded-full flex items-center"
+              className="h-[var(--trust-size)] bg-[#28282a] border border-[rgba(255,255,255,0.5)] rounded-full flex items-center"
               style={{
                 marginLeft: "calc(var(--trust-size) * -0.42)",
                 paddingLeft: "calc(var(--trust-size) * 0.58)",
                 paddingRight: "clamp(14px, 2.5vw, 22px)",
               }}
             >
-              <span className="text-[#c4c2c3] font-medium whitespace-nowrap text-[clamp(12px,1.4vw,13.5px)]">
+              <span className="text-[#e3e1e2] font-medium whitespace-nowrap text-[clamp(12px,1.4vw,13.5px)]">
                 Trusted by 2000+ Enterprises
               </span>
             </div>
@@ -314,7 +314,7 @@ export default function HomePage() {
 
           {/* Subhead */}
           <p
-            className="text-[#d0d0d0] opacity-80 font-normal leading-relaxed max-w-[min(500px,92%)] anim"
+            className="text-[#eaeaea] font-normal leading-relaxed max-w-[min(500px,92%)] text-on-video anim"
             style={{
               fontSize: "clamp(calc(13.5px + 2pt), calc(1.55vw + 2pt), calc(16.5px + 2pt))",
               animationDelay: "0.28s",
@@ -356,7 +356,7 @@ export default function HomePage() {
                 How SchemaMind Works
               </span>
             </h2>
-            <p className="text-[#d0d0d0] opacity-80 text-lg max-w-2xl mx-auto anim" style={{ animationDelay: "0.2s" }}>
+            <p className="text-[#eaeaea] text-lg max-w-2xl mx-auto anim" style={{ animationDelay: "0.2s" }}>
               Three steps from confusion to mastery. Your way.
             </p>
           </div>
@@ -372,9 +372,9 @@ export default function HomePage() {
                 className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 anim"
                 style={{ animationDelay: `${0.3 + i * 0.15}s` }}
               >
-                <span className="stat-icon text-3xl text-white/40">{step.num}</span>
+                <span className="stat-icon text-3xl text-white/70">{step.num}</span>
                 <h3 className="text-xl font-semibold mt-3 mb-2">{step.title}</h3>
-                <p className="text-[#d0d0d0] opacity-80 text-sm leading-relaxed">{step.desc}</p>
+                <p className="text-[#eaeaea] text-sm leading-relaxed">{step.desc}</p>
               </div>
             ))}
           </div>
@@ -387,9 +387,9 @@ export default function HomePage() {
                 className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all anim"
                 style={{ animationDelay: `${0.4 + i * 0.1}s` }}
               >
-                <i className={`fa-solid ${feature.icon} text-2xl mb-4 text-white/60`} />
+                <i className={`fa-solid ${feature.icon} text-2xl mb-4 text-white/85`} />
                 <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-[#d0d0d0] opacity-80 text-sm leading-relaxed">{feature.description}</p>
+                <p className="text-[#eaeaea] text-sm leading-relaxed">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -404,7 +404,7 @@ export default function HomePage() {
               Ready to Learn Faster?
             </span>
           </h2>
-          <p className="text-[#d0d0d0] opacity-80 text-lg mb-8 anim" style={{ animationDelay: "0.2s" }}>
+          <p className="text-[#eaeaea] text-lg mb-8 text-on-video anim" style={{ animationDelay: "0.2s" }}>
             Stop re-reading. Start remembering. Try SchemaMind now.
           </p>
           <Link
@@ -419,7 +419,7 @@ export default function HomePage() {
 
       {/* ── FOOTER ── */}
       <footer className="py-8 px-4 text-center border-t border-white/10">
-        <p className="text-[#8e8e8e] text-sm">
+        <p className="text-[#b4b4b4] text-sm">
           SchemaMind — Built for the Hackathon. AI-powered learning.
         </p>
       </footer>

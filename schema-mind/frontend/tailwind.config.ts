@@ -10,13 +10,13 @@ module.exports = {
       colors: {
         'sm-bg': '#000000',
         'sm-text': '#ffffff',
-        'sm-muted': '#8e8e8e',
+        'sm-muted': '#b4b4b4',
         'sm-nav-text': '#2e2e2e',
         'sm-pill': '#28282a',
-        'sm-sign-in': '#c8c8c8',
+        'sm-sign-in': '#e2e2e2',
         'sm-trust-bg': '#28282a',
-        'sm-trust-border': 'rgba(255, 255, 255, 0.4)',
-        'sm-trust-text': '#c4c2c3',
+        'sm-trust-border': 'rgba(255, 255, 255, 0.5)',
+        'sm-trust-text': '#e3e1e2',
       },
       fontFamily: {
         sans: ['"Inter"', '"Segoe UI"', 'system-ui', 'sans-serif'],

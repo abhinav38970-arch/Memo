@@ -1,3 +1,4 @@
+import traceback
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import AdaptPatternsRequest, AdaptPatternsResponse
 from app.services.adaptation_service import adapt_patterns
@@ -17,6 +18,7 @@ async def adapt_patterns_endpoint(req: AdaptPatternsRequest):
             )
         return result
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(
             status_code=500,
             detail=f"Adaptation failed: {str(e)}",
