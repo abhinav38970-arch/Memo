@@ -25,8 +25,9 @@ interface Question {
 }
 
 /* ── API config ── */
-// For local dev: use localhost:8000. On Render, update to your Render URL.
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Relative by default: Next.js rewrites /api/* to the backend (see next.config.mjs).
+// Set NEXT_PUBLIC_API_URL only if the browser should hit the backend directly.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 /* ── Built-in pattern types ── */
 const BUILTIN_TYPES = [

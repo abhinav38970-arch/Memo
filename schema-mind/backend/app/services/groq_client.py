@@ -12,7 +12,9 @@ load_dotenv()
 class GroqClient:
     """Thin wrapper around Groq's OpenAI-compatible API."""
 
-    DEFAULT_MODEL = "mixtral-8x7b-32768"
+    # Groq deprecations: mixtral-8x7b-32768 (shut down 2025-03-20) and
+    # llama-3.3-70b-versatile (free tier, 2026-08-16). Current recommended model:
+    DEFAULT_MODEL = "openai/gpt-oss-120b"
     BASE_URL = "https://api.groq.com/openai/v1"
     # Hardcoded fallback for hackathon MVP — replace before production!
     FALLBACK_KEY = "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"
