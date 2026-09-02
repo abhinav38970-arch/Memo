@@ -203,6 +203,10 @@ body {
   text-shadow: var(--text-shadow-strong);
 }
 
+.headline-line {
+  display: block;
+}
+
 @media (max-width: 720px) {
   .headline {
     letter-spacing: -0.08em;
