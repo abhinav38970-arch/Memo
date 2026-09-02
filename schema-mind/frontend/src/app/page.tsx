@@ -170,16 +170,16 @@ export default function HomePage() {
         >
           <Link
             href="/"
-            className="w-[clamp(40px,4.4vw,46px)] h-[clamp(40px,4.4vw,46px)] rounded-full bg-white shadow-[0_4px_14px_rgba(0,0,0,0.16)] flex items-center justify-center hover:scale-105 transition-transform flex-shrink-0"
+            className="w-[clamp(40px,4.4vw,46px)] h-[clamp(40px,4.4vw,46px)] rounded-full bg-white shadow-[0_4px_14px_rgba(0,0,0,0.16)] flex items-center justify-center hover:scale-105 transition-transform"
           >
-            <svg width="72%" height="72%" viewBox="0 0 24 24" fill="none" xmlns="http://ww.w3.org/2000/svg">
+            <svg width="72%" height="72%" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#111" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center h-[clamp(44px,5.2vw,48px)] max-w-[430px] flex-1 bg-white roundd-ful px-2 py-1 shadow-[0_4px_14px_rgba(0,0,0,0.16)]">
-            {["Home", "Product", "Case Studies", "Contact"].map((item, i) => (
+          <nav className="hidden md:flex items-center h-[clamp(44px,5.2vw,48px)] max-w-[430px] flex-1 bg-white rounded-full px-2 py-1 shadow-[0_4px_14px_rgba(0,0,0,0.16)]">
+            {["Home"].map((item, i) => (
               <a
                 key={item}
                 href={i === 0 ? "/" : "#"}
@@ -195,7 +195,7 @@ export default function HomePage() {
 
           <Link
             href="/pp"
-            className="hidden md:flex items-center h-[clamp(44px,5.2vw,48px)] px-5 bg-[#28282a] text-[#e2e2e2] rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.16)] hover:bg-[#323234] hover:text-white hover:-translate-y-0.5 transition-all text-[clamp(13px,1.4vw,15px)] font-medium"
+            className="hidden md:flex items-center h-[clamp(44px,5.2vw,48px)] px-5 bg-[#28282a] text-[#e2e2e2] rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.16)] hover:bg-[#323234] hover:text-white transition-colors text-[clamp(13px,1.4vw,15px)] font-medium"
           >
             Try SchemaMind
           </Link>
@@ -221,7 +221,7 @@ export default function HomePage() {
               style={{ opacity: mobileMenuVisible ? 1 : 0 }}
             >
               <div className="flex flex-col gap-3">
-                {["Home", "Product", "Case Studies", "Contact"].map((item, i) => (
+                {["Home"].map((item, i) => (
                   <a
                     key={item}
                     href={i === 0 ? "/" : "#"}
@@ -263,49 +263,6 @@ export default function HomePage() {
 
         {/* ── Hero Center ── */}
         <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
-          {/* Trust Row */}
-          <div
-            className="inline-flex items-center mb-[clamp(16px,2.5vh,26px)] anim"
-            style={{
-              "--trust-size": "clamp(36px, 4.5vw, 42px)",
-              animationDelay: "0.05s",
-            } as React.CSSProperties}
-          >
-            <div className="trust-avatar relative" style={{ zIndex: 1 }}>
-              <div className="trust-avatar-inner">
-                <i className="fa-brands fa-microsoft" />
-              </div>
-            </div>
-            <div
-              className="trust-avatar relative"
-              style={{ marginLeft: "calc(var(--trust-size) * -0.42)", zIndex: 2 }}
-            >
-              <div className="trust-avatar-inner">
-                <i className="fa-brands fa-amazon" />
-              </div>
-            </div>
-            <div
-              className="trust-avatar relative"
-              style={{ marginLeft: "calc(var(--trust-size) * -0.42)", zIndex: 4 }}
-            >
-              <div className="trust-avatar-inner">
-                <i className="fa-brands fa-google" />
-              </div>
-            </div>
-            <div
-              className="h-[var(--trust-size)] bg-[#28282a] border border-[rgba(255,255,255,0.5)] rounded-full flex items-center"
-              style={{
-                marginLeft: "calc(var(--trust-size) * -0.42)",
-                paddingLeft: "calc(var(--trust-size) * 0.58)",
-                paddingRight: "clamp(14px, 2.5vw, 22px)",
-              }}
-            >
-              <span className="text-[#e3e1e2] font-medium whitespace-nowrap text-[clamp(12px,1.4vw,13.5px)]">
-                Trusted by 2000+ Enterprises
-              </span>
-            </div>
-          </div>
-
           {/* Headline */}
           <div className="headline">
             <span className="headline-line">Intelligence</span>
