@@ -49,6 +49,7 @@ git push -u origin main
 | **Name** | `schema-mind-api` |
 | **Region** | Choose closest to you (e.g. Oregon) |
 | **Branch** | `main` |
+| **Root Directory** | `schema-mind/backend` |
 | **Runtime** | `Python 3` |
 | **Build Command** | `pip install -r requirements.txt` |
 | **Start Command** | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
@@ -56,6 +57,14 @@ git push -u origin main
 
 4. Click **"Advanced"** and add:
    - **Health Check Path**: `/api/health`
+   - Environment variables (all optional — sensible defaults are built in):
+
+     | Key | Value | Why |
+     |-----|-------|-----|
+     | `GROQ_API_KEY` | your key | falls back to the embedded hackathon key |
+     | `GROQ_MODEL` | `openai/gpt-oss-120b` | current recommended Groq model |
+     | `GROQ_TPM_LIMIT` | `8000` | Groq **free tier** tokens/min. If you upgrade to the Developer plan, set your new limit here |
+     | `PYTHON_VERSION` | `3.11.9` | also pinned via `.python-version` |
 
 5. Click **"Create Web Service"**
 
@@ -67,8 +76,11 @@ git push -u origin main
 Open `https://schema-mind-api.onrender.com/api/health` in your browser.
 You should see:
 ```json
-{"status": "ok", "model": "mixtral-8x7b-32768"}
+{"status": "ok", "model": "openai/gpt-oss-120b", "groq": {"tpm_limit": 8000, "...": "..."}}
 ```
+
+The `groq` block shows the effective configuration (model, tokens-per-minute limit, reasoning
+effort) so you can confirm your environment variables were picked up.
 
 ---
 
@@ -125,6 +137,22 @@ Go to Project → Settings → Domains and add your own domain.
 - Check that `NEXT_PUBLIC_API_URL` is set correctly in Vercel:
   - Go to Vercel → Project → Settings → Environment Variables
   - Make sure the value ends WITHOUT a trailing slash
+
+### Groq `413 Request too large ... tokens per minute (TPM): Limit 8000, Requested 8665`
+Groq's free tier allows 8,000 tokens per minute for `openai/gpt-oss-120b` and charges
+`prompt + max_tokens` up front. The backend now sizes every request to fit that budget
+automatically, so this should not happen anymore. If you still see it:
+- Make sure Render deployed the latest `main` (Render dashboard → Manual Deploy → Deploy latest commit).
+- Check `GROQ_TPM_LIMIT` isn't set higher than your real limit (see https://console.groq.com/settings/limits).
+
+### "The AI is rate-limited right now" (HTTP 429)
+The per-minute budget for the whole Groq organization is used up (every generate/quiz/adapt
+call spends a few thousand tokens). Wait for the countdown in the UI and retry, or upgrade
+the Groq plan and raise `GROQ_TPM_LIMIT`.
+
+### The first request takes ~1 minute
+Render's free tier puts the backend to sleep after 15 minutes of inactivity; the first request
+wakes it up. The UI shows a hint after a few seconds — just wait, it will complete.
 
 ### Backend deploy fails
 - Go to Render dashboard → your service → **"Logs"**

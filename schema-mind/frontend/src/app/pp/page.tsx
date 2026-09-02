@@ -32,16 +32,83 @@ interface Question {
 // Trailing slashes are stripped so "https://x.onrender.com/" doesn't produce "//api/..." (404s).
 const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/+$/, "");
 
-/* ── Extract a useful error message from a failed API response ── */
-async function apiError(res: Response): Promise<Error> {
+/* ── API errors ── */
+const MAX_TEXT_CHARS = 8000; // mirrors the backend's max_length
+const REQUEST_TIMEOUT_MS = 120_000; // Render free tier can cold-start for ~60s
+
+interface ApiError extends Error {
+  status?: number;
+  retryAfter?: number;
+  kind: "rate_limit" | "too_large" | "validation" | "upstream" | "network" | "timeout" | "unknown";
+}
+
+function makeApiError(message: string, kind: ApiError["kind"], status?: number, retryAfter?: number): ApiError {
+  const err = new Error(message) as ApiError;
+  err.kind = kind;
+  err.status = status;
+  err.retryAfter = retryAfter;
+  return err;
+}
+
+/* Turn a failed response into a readable error (the backend sends a clear `detail`). */
+async function apiError(res: Response): Promise<ApiError> {
+  let detail = "";
   try {
     const body = await res.json();
-    const detail = typeof body?.detail === "string" ? body.detail : JSON.stringify(body?.detail);
-    if (detail) return new Error(`API error ${res.status}: ${detail}`);
+    detail = typeof body?.detail === "string" ? body.detail : body?.detail ? JSON.stringify(body.detail) : "";
   } catch {
-    /* body wasn't JSON */
+    /* body wasn't JSON (e.g. an HTML error page from the host) */
   }
-  return new Error(`API error: ${res.status}`);
+  const retryAfter = Number(res.headers.get("retry-after")) || undefined;
+  if (res.status === 429) {
+    return makeApiError(detail || "The AI is rate-limited right now. Please wait a minute and try again.", "rate_limit", 429, retryAfter);
+  }
+  if (res.status === 413) {
+    return makeApiError(detail || "That text is too long for the AI to process at once. Please shorten it.", "too_large", 413);
+  }
+  if (res.status === 422) {
+    return makeApiError(detail || "Please check your input and try again.", "validation", 422);
+  }
+  if (res.status === 502 || res.status === 503 || res.status === 504) {
+    return makeApiError(
+      detail || "The backend is waking up or the AI is temporarily unavailable. Please try again in a moment.",
+      "upstream",
+      res.status,
+    );
+  }
+  if (res.status === 404) {
+    return makeApiError("The API endpoint was not found. Check NEXT_PUBLIC_API_URL / BACKEND_URL points at the backend.", "unknown", 404);
+  }
+  return makeApiError(detail ? `${detail}` : `The server returned an unexpected error (${res.status}).`, "unknown", res.status);
+}
+
+/* fetch() with a timeout and network-error translation. */
+async function apiFetch(path: string, body: unknown): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (e: any) {
+    if (e?.name === "AbortError") {
+      throw makeApiError("The request timed out. The backend may be waking up — please try again.", "timeout");
+    }
+    throw makeApiError(
+      "Could not reach the backend. Check your connection, or that the API server is running and NEXT_PUBLIC_API_URL / BACKEND_URL is correct.",
+      "network",
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function toApiError(e: unknown, fallback: string): ApiError {
+  if (e && typeof e === "object" && "kind" in (e as any)) return e as ApiError;
+  return makeApiError((e as any)?.message || fallback, "unknown");
 }
 
 /* ── Built-in pattern types ── */
@@ -55,6 +122,73 @@ const BUILTIN_TYPES = [
 
 /* ── Steps ── */
 type Step = "onboarding" | "input" | "generating" | "patterns" | "quiz" | "results" | "adapting";
+
+/* ── Shown after a while on the loading screen (Render free tier cold starts) ── */
+function SlowHint() {
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 12_000);
+    return () => clearTimeout(t);
+  }, []);
+  if (!slow) return null;
+  return (
+    <p className="text-[#b4b4b4] text-xs mt-4 text-on-video max-w-sm text-center">
+      Still working… the backend may be waking up from sleep (this can take up to a minute the first time).
+    </p>
+  );
+}
+
+/* ── Error banner with retry + rate-limit countdown ── */
+function ErrorBanner({ error, onRetry, onDismiss }: { error: ApiError; onRetry?: () => void; onDismiss?: () => void }) {
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(
+    error.kind === "rate_limit" && error.retryAfter ? Math.ceil(error.retryAfter) : null,
+  );
+  useEffect(() => {
+    if (secondsLeft === null || secondsLeft <= 0) return;
+    const t = setTimeout(() => setSecondsLeft((s) => (s === null ? null : s - 1)), 1000);
+    return () => clearTimeout(t);
+  }, [secondsLeft]);
+
+  const title =
+    error.kind === "rate_limit" ? "The AI is rate-limited right now"
+    : error.kind === "too_large" ? "Your text is too long"
+    : error.kind === "validation" ? "Please check your input"
+    : error.kind === "network" ? "Can't reach the backend"
+    : error.kind === "timeout" ? "The request timed out"
+    : error.kind === "upstream" ? "The AI didn't answer this time"
+    : "Something went wrong";
+  const waiting = secondsLeft !== null && secondsLeft > 0;
+
+  return (
+    <div role="alert" className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 text-left max-w-2xl mx-auto">
+      <div className="flex items-start gap-3">
+        <span className="text-red-300 text-lg leading-none mt-0.5">!</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-red-200 font-medium text-sm">{title}</p>
+          <p className="text-red-300/90 text-xs mt-1 leading-relaxed break-words">{error.message}</p>
+          {(onRetry || onDismiss) && (
+            <div className="flex flex-wrap items-center gap-3 mt-3">
+              {onRetry && (
+                <button
+                  onClick={onRetry}
+                  disabled={waiting}
+                  className="bg-white text-black px-4 py-1.5 rounded-full text-xs font-semibold disabled:opacity-50 hover:bg-white/90 transition-all"
+                >
+                  {waiting ? `Retry in ${secondsLeft}s` : "Try again"}
+                </button>
+              )}
+              {onDismiss && (
+                <button onClick={onDismiss} className="text-[#b4b4b4] hover:text-white text-xs transition-colors">
+                  Dismiss
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function ToolPage() {
   /* ── State ── */
@@ -70,7 +204,7 @@ export default function ToolPage() {
   const [wrongConcepts, setWrongConcepts] = useState<string[]>([]);
   const [failedTypes, setFailedTypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<ApiError | null>(null);
   const [feedback, setFeedback] = useState<{ show: boolean; correct: boolean; expected: string }>({ show: false, correct: false, expected: "" });
   const [quizDone, setQuizDone] = useState(false);
   const [adaptNote, setAdaptNote] = useState("");
@@ -98,20 +232,20 @@ export default function ToolPage() {
   const generatePatterns = useCallback(async () => {
     if (!inputText.trim() || preferences.length === 0) return;
     setLoading(true);
-    setError("");
+    setError(null);
     setStep("generating");
     try {
-      const res = await fetch(`${API_BASE}/api/generate-patterns`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: inputText, preferences }),
-      });
+      const res = await apiFetch("/api/generate-patterns", { text: inputText.trim(), preferences });
       if (!res.ok) throw await apiError(res);
       const data = await res.json();
+      if (!Array.isArray(data?.patterns) || data.patterns.length === 0) {
+        throw makeApiError("The AI returned no patterns. Please try again.", "upstream");
+      }
       setPatterns(data.patterns);
+      setAdaptNote("");
       setStep("patterns");
-    } catch (e: any) {
-      setError(e.message || "Failed to generate patterns");
+    } catch (e) {
+      setError(toApiError(e, "Failed to generate patterns"));
       setStep("input");
     } finally {
       setLoading(false);
@@ -121,22 +255,21 @@ export default function ToolPage() {
   const generateQuiz = useCallback(async () => {
     if (patterns.length === 0) return;
     setLoading(true);
-    setError("");
+    setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/generate-quiz`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ patterns }),
-      });
+      const res = await apiFetch("/api/generate-quiz", { patterns });
       if (!res.ok) throw await apiError(res);
       const data = await res.json();
+      if (!Array.isArray(data?.questions) || data.questions.length === 0) {
+        throw makeApiError("The AI returned no quiz questions. Please try again.", "upstream");
+      }
       setQuestions(data.questions);
       setCurrentQ(0);
       setAnswers([]);
       setQuizDone(false);
       setStep("quiz");
-    } catch (e: any) {
-      setError(e.message || "Failed to generate quiz");
+    } catch (e) {
+      setError(toApiError(e, "Failed to generate quiz"));
     } finally {
       setLoading(false);
     }
@@ -145,26 +278,25 @@ export default function ToolPage() {
   const adaptPatterns = useCallback(async () => {
     if (!inputText.trim() || preferences.length === 0) return;
     setLoading(true);
-    setError("");
+    setError(null);
     setStep("adapting");
     try {
-      const res = await fetch(`${API_BASE}/api/adapt-patterns`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          original_text: inputText,
-          preferences,
-          wrong_answers: wrongConcepts,
-          failed_pattern_types: failedTypes,
-        }),
+      const res = await apiFetch("/api/adapt-patterns", {
+        original_text: inputText.trim(),
+        preferences,
+        wrong_answers: wrongConcepts,
+        failed_pattern_types: failedTypes,
       });
       if (!res.ok) throw await apiError(res);
       const data = await res.json();
+      if (!Array.isArray(data?.adapted_patterns) || data.adapted_patterns.length === 0) {
+        throw makeApiError("The AI returned no adapted patterns. Please try again.", "upstream");
+      }
       setPatterns(data.adapted_patterns);
-      setAdaptNote(data.adaptation_note);
+      setAdaptNote(data.adaptation_note || "");
       setStep("patterns");
-    } catch (e: any) {
-      setError(e.message || "Failed to adapt patterns");
+    } catch (e) {
+      setError(toApiError(e, "Failed to adapt patterns"));
       setStep("results");
     } finally {
       setLoading(false);
@@ -236,7 +368,7 @@ export default function ToolPage() {
     setAnswers([]);
     setWrongConcepts([]);
     setFailedTypes([]);
-    setError("");
+    setError(null);
     setFeedback({ show: false, correct: false, expected: "" });
     setQuizDone(false);
     setAdaptNote("");
@@ -415,13 +547,24 @@ export default function ToolPage() {
               </p>
             </div>
 
-            <textarea
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              placeholder="Paste your text here..."
-              rows={10}
-              className="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4 text-white placeholder:text-[#b4b4b4] text-sm focus:outline-none focus:border-white/40 resize-y min-h-[200px]"
-            />
+            <div>
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value.slice(0, MAX_TEXT_CHARS))}
+                placeholder="Paste your text here..."
+                rows={10}
+                maxLength={MAX_TEXT_CHARS}
+                className="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4 text-white placeholder:text-[#b4b4b4] text-sm focus:outline-none focus:border-white/40 resize-y min-h-[200px]"
+              />
+              <div className="flex justify-between items-center mt-2 px-1">
+                <span className="text-[#b4b4b4] text-xs">
+                  {inputText.trim().length < 10 && inputText.length > 0 ? "At least 10 characters needed" : "Shorter texts get faster, sharper patterns"}
+                </span>
+                <span className={`text-xs ${inputText.length >= MAX_TEXT_CHARS ? "text-red-300" : "text-[#b4b4b4]"}`}>
+                  {inputText.length.toLocaleString()}/{MAX_TEXT_CHARS.toLocaleString()}
+                </span>
+              </div>
+            </div>
 
             <div className="flex justify-between items-center">
               <button
@@ -432,14 +575,14 @@ export default function ToolPage() {
               </button>
               <button
                 onClick={generatePatterns}
-                disabled={!inputText.trim()}
+                disabled={inputText.trim().length < 10 || loading}
                 className="bg-white text-black px-8 py-3 rounded-full font-semibold text-sm hover:scale-105 transition-all cta-glow disabled:opacity-50 disabled:hover:scale-100"
               >
                 Generate Patterns →
               </button>
             </div>
 
-            {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+            {error && <ErrorBanner error={error} onRetry={generatePatterns} onDismiss={() => setError(null)} />}
           </div>
         )}
 
@@ -450,7 +593,8 @@ export default function ToolPage() {
             <p className="text-white font-medium">
               {step === "generating" ? "Crafting your memory patterns..." : "Adapting patterns based on your progress..."}
             </p>
-            <p className="text-[#b4b4b4] text-sm mt-2 text-on-video">This takes a few seconds</p>
+            <p className="text-[#b4b4b4] text-sm mt-2 text-on-video">This usually takes a few seconds</p>
+            <SlowHint />
           </div>
         )}
 
@@ -501,7 +645,7 @@ export default function ToolPage() {
               </button>
             </div>
 
-            {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+            {error && <ErrorBanner error={error} onRetry={generateQuiz} onDismiss={() => setError(null)} />}
           </div>
         )}
 
@@ -630,12 +774,15 @@ export default function ToolPage() {
                 </div>
                 <button
                   onClick={adaptPatterns}
-                  className="mt-6 bg-white text-black px-8 py-3 rounded-full font-semibold text-sm hover:scale-105 transition-all cta-glow"
+                  disabled={loading}
+                  className="mt-6 bg-white text-black px-8 py-3 rounded-full font-semibold text-sm hover:scale-105 transition-all cta-glow disabled:opacity-50"
                 >
                   Try Different Approach →
                 </button>
               </div>
             )}
+
+            {error && <ErrorBanner error={error} onRetry={adaptPatterns} onDismiss={() => setError(null)} />}
 
             <div className="flex justify-center gap-4 mt-4">
               {pct >= 80 && (
