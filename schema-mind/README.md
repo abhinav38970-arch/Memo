@@ -22,6 +22,7 @@ schema-mind/
 │   │       ├── pattern_service.py
 │   │       ├── quiz_service.py
 │   │       └── adaptation_service.py
+│   ├── tests/             # pytest suite (fake Groq with free-tier rate-limit accounting)
 │   ├── requirements.txt
 │   └── render.yaml
 │
@@ -64,7 +65,7 @@ schema-mind/
 1. Create a Render Web Service connected to your repo or upload the `/backend` folder
 2. Set the **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 3. Add environment variable: `GROQ_API_KEY` (get yours at https://console.groq.com)
-4. Optional: `GROQ_MODEL` (default: `mixtral-8x7b-32768`)
+4. Optional: `GROQ_MODEL` (default: `openai/gpt-oss-120b`), `GROQ_TPM_LIMIT` (default `8000` = Groq free tier; raise it if you upgrade), `GROQ_REASONING_EFFORT` (default `low`). See `backend/.env.example` for all options.
 
 ### Frontend (Vercel)
 
@@ -72,6 +73,16 @@ schema-mind/
 2. Set **Root Directory**: `frontend`
 3. Add environment variable: `NEXT_PUBLIC_API_URL` = your Render URL
 4. Deploy!
+
+### Groq free tier & token budgets
+
+Groq's free tier allows **8,000 tokens per minute** for `openai/gpt-oss-120b`, and it reserves
+`prompt_tokens + max_tokens` against that budget *up front*. The backend therefore sizes
+`max_tokens` for every request so the whole request fits (learning the real limit from Groq's
+`x-ratelimit-*` headers), lowers the model's reasoning effort, and repairs truncated JSON.
+If the minute's budget is used up you get a clean `429` with a "try again in N seconds"
+message instead of a crash; text that can never fit gets a `413` asking you to shorten it.
+Upgrading your Groq plan? Set `GROQ_TPM_LIMIT` to the new limit and everything scales up.
 
 ### Local Development
 
@@ -83,6 +94,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env  # Add your GROQ_API_KEY
 uvicorn app.main:app --reload --port 8000
+pip install pytest pytest-asyncio && pytest   # run the test suite
 
 # Frontend
 cd frontend
@@ -95,7 +107,7 @@ npm run dev
 
 ## Tech Stack
 
-- **Backend**: FastAPI, Python, Groq API (mixtral-8x7b)
+- **Backend**: FastAPI, Python, Groq API (`openai/gpt-oss-120b`)
 - **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
 - **Deployment**: Render (backend), Vercel (frontend)
 - **Animations**: CSS-only, IntersectionObserver for scroll reveals

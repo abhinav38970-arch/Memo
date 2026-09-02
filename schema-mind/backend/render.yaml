@@ -1,9 +1,21 @@
 services:
   - type: web
     name: schema-mind-api
-    env: python
+    runtime: python
+    rootDir: schema-mind/backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
       - key: GROQ_API_KEY
         value: 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
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      # Free tier = 8000 tokens/min for gpt-oss-120b. If you upgrade to the
+      # Developer plan, raise this to your new TPM limit.
+      - key: GROQ_TPM_LIMIT
+        value: "8000"
+      - key: GROQ_REASONING_EFFORT
+        value: low

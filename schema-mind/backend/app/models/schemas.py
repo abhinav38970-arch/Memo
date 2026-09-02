@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 
 # ── Onboarding ──────────────────────────────────────────────────────────
@@ -82,3 +82,4 @@ class AdaptPatternsResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str = "ok"
     model: Optional[str] = None
+    groq: Optional[Dict[str, Any]] = Field(None, description="Effective Groq client configuration")
