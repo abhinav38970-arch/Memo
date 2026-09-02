@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
-/* ── Stat counters ── */
+/* ── Realistic metric counters ── */
 const stats = [
-  { icon: "<", target: 120, suffix: "ms", decimals: 0, label: "Inference Time" },
-  { icon: "%", target: 99.99, suffix: "%", decimals: 2, label: "Platform Uptime" },
-  { icon: "*", target: 24, suffix: "/7", decimals: 0, label: "Autonomous Runtime" },
-  { icon: "#", target: 2.4, suffix: "M", decimals: 1, label: "Context Windows" },
+  { icon: "⚡", target: 2, suffix: "s", decimals: 1, label: "Pattern Generation" },
+  { icon: "✓", target: 85, suffix: "%", decimals: 0, label: "Quiz Accuracy" },
+  { icon: "🧠", target: 4, suffix: "", decimals: 0, label: "Learning Styles" },
+  { icon: "♻️", target: 3, suffix: "", decimals: 0, label: "Adaptation Rounds" },
 ];
 
 /* ── Count-up hook ── */
@@ -30,7 +30,7 @@ function useCountUp(target: number, decimals: number, duration: number, delay: n
             function tick(now: number) {
               const elapsed = now - startTime;
               const progress = Math.min(elapsed / duration, 1);
-              const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+              const eased = 1 - Math.pow(1 - progress, 3);
               setValue(eased * target);
               if (progress < 1) {
                 requestAnimationFrame(tick);
@@ -67,7 +67,7 @@ function StatCard(props: {
       className="flex flex-col items-center gap-1 stat anim"
       style={{ animationDelay: `${0.5 + props.delay * 0.08}s` }}
     >
-      <span className="stat-icon text-white">{props.icon}</span>
+      <span className="stat-icon text-white text-2xl">{props.icon}</span>
       <span ref={ref} className="stat-value text-white text-[clamp(18px,2.2vw,26px)]">
         {value.toFixed(props.decimals)}
         <span>{props.suffix}</span>
@@ -80,33 +80,33 @@ function StatCard(props: {
 const features = [
   {
     icon: "fa-brain",
-    title: "Personalized Patterns",
-    description: "Tell us how YOUR memory works — acronyms, analogies, stories, movies, sports, anything. We generate patterns tailored to you.",
+    title: "Personalized Learning Patterns",
+    description: "Generate memory techniques tailored to your unique learning style—mnemonics, stories, analogies, or custom methods.",
   },
   {
-    icon: "fa-rotate",
+    icon: "fa-rotate-right",
     title: "Adaptive Quizzing",
-    description: "If a pattern isn't sticking, we switch. Our AI detects what isn't working and tries a different approach.",
+    description: "AI detects which patterns work best for you and adapts in real-time. Weak areas trigger different strategies.",
   },
   {
     icon: "fa-paste",
     title: "Paste Any Material",
-    description: "Textbook paragraphs, code documentation, lecture notes, video transcripts — paste anything and watch it transform.",
+    description: "Upload textbook paragraphs, documentation, lecture notes, or transcripts. Transform them instantly into study patterns.",
   },
   {
     icon: "fa-chart-line",
-    title: "Track Your Progress",
-    description: "See which patterns work best for you over time. Your brain has a learning style — we help you find it.",
+    title: "Track Progress",
+    description: "Monitor which learning styles work best for you. Build your perfect learning profile over time.",
   },
   {
     icon: "fa-sliders",
-    title: "Custom Anything",
-    description: "Remember things through The Matrix? Football plays? Your favorite TV show? Just describe it — we make it work.",
+    title: "Custom Memory Frameworks",
+    description: "Not finding the right style? Describe your own memory system and we'll use it to create patterns.",
   },
   {
-    icon: "fa-gauge-high",
-    title: "Built for Speed",
-    description: "Powered by Groq's ultra-fast inference. Patterns generate in seconds, not minutes. Study more, wait less.",
+    icon: "fa-bolt",
+    title: "Fast & Efficient",
+    description: "Powered by Groq's fast inference. Generate patterns in seconds. Study more, wait less.",
   },
 ];
 
@@ -197,7 +197,7 @@ export default function HomePage() {
             href="/pp"
             className="hidden md:flex items-center h-[clamp(44px,5.2vw,48px)] px-5 bg-[#28282a] text-[#e2e2e2] rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.16)] hover:bg-[#323234] hover:text-white transition-colors text-[clamp(13px,1.4vw,15px)] font-medium"
           >
-            Try SchemaMind
+            Try Memo
           </Link>
 
           {/* Mobile Burger */}
@@ -251,10 +251,10 @@ export default function HomePage() {
                 ))}
                 <Link
                   href="/pp"
-                  className="mt-3 w-full text-center py-3 bg-[#28282a] text-white rounded-full font-medium"
+                  className="mt-3 w-full text-center py-3 bg-[#28282a] text-white rounded-full font-medium hover:bg-[#323234] transition-colors"
                   onClick={closeMenu}
                 >
-                  Try SchemaMind
+                  Try Memo
                 </Link>
               </div>
             </div>
@@ -265,20 +265,20 @@ export default function HomePage() {
         <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
           {/* Headline */}
           <div className="headline">
-            <span className="headline-line">Intelligence</span>
-            <span className="headline-line">Designed To Evolve</span>
+            <span className="headline-line">Learn Smarter</span>
+            <span className="headline-line">Not Harder</span>
           </div>
 
           {/* Subhead */}
           <p
-            className="text-[#eaeaea] font-normal leading-relaxed max-w-[min(500px,92%)] text-on-video anim"
+            className="text-[#eaeaea] font-normal leading-relaxed max-w-[min(550px,92%)] text-on-video anim"
             style={{
               fontSize: "clamp(calc(13.5px + 2pt), calc(1.55vw + 2pt), calc(16.5px + 2pt))",
               animationDelay: "0.28s",
             }}
           >
-            Build applications that reason, adapt and collaborate using a modular
-            AI platform designed for production.
+            Paste any text. Get personalized memory patterns tailored to how your brain learns. 
+            Quiz yourself, adapt, and remember better.
           </p>
 
           {/* CTA */}
@@ -292,7 +292,7 @@ export default function HomePage() {
               animationDelay: "0.4s",
             }}
           >
-            Get Started
+            Start Learning Now
           </Link>
         </div>
 
@@ -310,26 +310,26 @@ export default function HomePage() {
           <div className="text-center mb-16 anim">
             <h2 className="headline text-4xl md:text-5xl mb-4">
               <span className="headline-line block" style={{ animationDelay: "0.1s" }}>
-                How SchemaMind Works
+                How Memo Works
               </span>
             </h2>
             <p className="text-[#eaeaea] text-lg max-w-2xl mx-auto anim" style={{ animationDelay: "0.2s" }}>
-              Three steps from confusion to mastery. Your way.
+              Three simple steps to master any material.
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8 mb-20">
             {[
-              { num: "01", title: "Paste Your Material", desc: "Any text — textbook, notes, docs, transcripts. Paste it in and we analyze the structure." },
-              { num: "02", title: "AI Generates Your Patterns", desc: "Acronyms, analogies, stories, or YOUR custom method. Patterns built for how YOU remember." },
-              { num: "03", title: "Quiz Until It Sticks", desc: "Cloze tests, MCQs, and adaptive retries. If it's not working, we switch strategies automatically." },
+              { num: "1", title: "Paste Your Material", desc: "Share any text—textbook excerpts, lecture notes, articles, documentation. We analyze and understand it instantly." },
+              { num: "2", title: "AI Generates Patterns", desc: "Choose your learning style (or create a custom one) and watch Memo generate personalized memory patterns in seconds." },
+              { num: "3", title: "Quiz & Adapt", desc: "Take adaptive quizzes to test retention. If something isn't sticking, Memo switches strategies automatically." },
             ].map((step, i) => (
               <div
                 key={step.num}
                 className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 border border-white/10 anim"
                 style={{ animationDelay: `${0.3 + i * 0.15}s` }}
               >
-                <span className="stat-icon text-3xl text-white/70">{step.num}</span>
+                <span className="stat-icon text-4xl text-white/70">{step.num}</span>
                 <h3 className="text-xl font-semibold mt-3 mb-2">{step.title}</h3>
                 <p className="text-[#eaeaea] text-sm leading-relaxed">{step.desc}</p>
               </div>
@@ -353,23 +353,64 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── Why Memo Wins ── */}
+      <section className="py-20 px-4 md:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12 anim">
+            <h2 className="headline text-3xl md:text-5xl mb-4" style={{ animationDelay: "0.1s" }}>
+              <span className="headline-line block">Why Memo Stands Out</span>
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {[
+              {
+                title: "Personalization at Scale",
+                desc: "Supports built-in learning styles plus unlimited custom frameworks. Your brain, your way.",
+              },
+              {
+                title: "Closed-Loop Learning",
+                desc: "Not just generating patterns. AI adapts based on what works, creating a continuous improvement cycle.",
+              },
+              {
+                title: "Production-Ready Architecture",
+                desc: "Full-stack (Next.js + FastAPI). Smart rate-limiting on free-tier LLM. Zero database needed.",
+              },
+              {
+                title: "Real Learning Outcomes",
+                desc: "Measurable improvement through adaptive quizzes. Track which patterns work best for you.",
+              },
+            ].map((item, i) => (
+              <div
+                key={item.title}
+                className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 anim"
+                style={{ animationDelay: `${0.2 + i * 0.1}s` }}
+              >
+                <h3 className="text-lg font-semibold mb-3">{item.title}</h3>
+                <p className="text-[#eaeaea] text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── FINAL CTA ── */}
       <section className="py-20 px-4 text-center">
         <div className="max-w-2xl mx-auto">
           <h2 className="headline text-3xl md:text-5xl mb-4 anim" style={{ animationDelay: "0.1s" }}>
             <span className="headline-line block" style={{ fontSize: "clamp(24px, 5vw, 56px)" }}>
-              Ready to Learn Faster?
+              Ready to Learn Differently?
             </span>
           </h2>
           <p className="text-[#eaeaea] text-lg mb-8 text-on-video anim" style={{ animationDelay: "0.2s" }}>
-            Stop re-reading. Start remembering. Try SchemaMind now.
+            Stop cramming. Start remembering. Try Memo free, right now.
           </p>
           <Link
             href="/pp"
             className="inline-block bg-white text-black font-semibold rounded-full cta-glow hover:-translate-y-0.5 hover:scale-102 transition-all px-10 py-4 text-lg anim"
             style={{ animationDelay: "0.3s" }}
           >
-            Launch the Tool
+            Launch Memo
           </Link>
         </div>
       </section>
@@ -377,7 +418,7 @@ export default function HomePage() {
       {/* ── FOOTER ── */}
       <footer className="py-8 px-4 text-center border-t border-white/10">
         <p className="text-[#b4b4b4] text-sm">
-          SchemaMind — Built for the Hackathon. AI-powered learning.
+          Memo — AI-powered personalized learning. Built with care.
         </p>
       </footer>
     </main>
