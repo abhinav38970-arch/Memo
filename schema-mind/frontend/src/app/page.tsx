@@ -197,7 +197,7 @@ export default function HomePage() {
             href="/pp"
             className="hidden md:flex items-center h-[clamp(44px,5.2vw,48px)] px-5 bg-[#28282a] text-[#e2e2e2] rounded-full shadow-[0_4px_14px_rgba(0,0,0,0.16)] hover:bg-[#323234] hover:text-white transition-colors text-[clamp(13px,1.4vw,15px)] font-medium"
           >
-            Try Memo
+            Try SchemaMind
           </Link>
 
           {/* Mobile Burger */}
@@ -254,7 +254,7 @@ export default function HomePage() {
                   className="mt-3 w-full text-center py-3 bg-[#28282a] text-white rounded-full font-medium hover:bg-[#323234] transition-colors"
                   onClick={closeMenu}
                 >
-                  Try Memo
+                  Try SchemaMind
                 </Link>
               </div>
             </div>
@@ -310,7 +310,7 @@ export default function HomePage() {
           <div className="text-center mb-16 anim">
             <h2 className="headline text-4xl md:text-5xl mb-4">
               <span className="headline-line block" style={{ animationDelay: "0.1s" }}>
-                How Memo Works
+                How SchemaMind Works
               </span>
             </h2>
             <p className="text-[#eaeaea] text-lg max-w-2xl mx-auto anim" style={{ animationDelay: "0.2s" }}>
@@ -321,8 +321,8 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8 mb-20">
             {[
               { num: "1", title: "Paste Your Material", desc: "Share any text—textbook excerpts, lecture notes, articles, documentation. We analyze and understand it instantly." },
-              { num: "2", title: "AI Generates Patterns", desc: "Choose your learning style (or create a custom one) and watch Memo generate personalized memory patterns in seconds." },
-              { num: "3", title: "Quiz & Adapt", desc: "Take adaptive quizzes to test retention. If something isn't sticking, Memo switches strategies automatically." },
+              { num: "2", title: "AI Generates Patterns", desc: "Choose your learning style (or create a custom one) and watch SchemaMind generate personalized memory patterns in seconds." },
+              { num: "3", title: "Quiz & Adapt", desc: "Take adaptive quizzes to test retention. If something isn't sticking, SchemaMind switches strategies automatically." },
             ].map((step, i) => (
               <div
                 key={step.num}
@@ -353,12 +353,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Why Memo Wins ── */}
+      {/* ── Why SchemaMind Wins ── */}
       <section className="py-20 px-4 md:px-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12 anim">
             <h2 className="headline text-3xl md:text-5xl mb-4" style={{ animationDelay: "0.1s" }}>
-              <span className="headline-line block">Why Memo Stands Out</span>
+              <span className="headline-line block">Why SchemaMind Stands Out</span>
             </h2>
           </div>
 
@@ -403,14 +403,14 @@ export default function HomePage() {
             </span>
           </h2>
           <p className="text-[#eaeaea] text-lg mb-8 text-on-video anim" style={{ animationDelay: "0.2s" }}>
-            Stop cramming. Start remembering. Try Memo free, right now.
+            Stop cramming. Start remembering. Try SchemaMind free, right now.
           </p>
           <Link
             href="/pp"
             className="inline-block bg-white text-black font-semibold rounded-full cta-glow hover:-translate-y-0.5 hover:scale-102 transition-all px-10 py-4 text-lg anim"
             style={{ animationDelay: "0.3s" }}
           >
-            Launch Memo
+            Launch SchemaMind
           </Link>
         </div>
       </section>
@@ -418,7 +418,7 @@ export default function HomePage() {
       {/* ── FOOTER ── */}
       <footer className="py-8 px-4 text-center border-t border-white/10">
         <p className="text-[#b4b4b4] text-sm">
-          Memo — AI-powered personalized learning. Built with care.
+          SchemaMind — AI-powered personalized learning. Built with care.
         </p>
       </footer>
     </main>
